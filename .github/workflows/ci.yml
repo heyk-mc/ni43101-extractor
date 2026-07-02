@@ -38,7 +38,7 @@ jobs:
         run: black --check .
 
       - name: Mypy check
-        run: mypy agents/ core/ eval/ --ignore-missing-imports --disallow-untyped-defs=false
+        run: mypy agents/ core/ eval/ --ignore-missing-imports
 
   # =============================
   # 单元测试
