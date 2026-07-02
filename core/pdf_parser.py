@@ -435,8 +435,16 @@ def extract_resources_from_pdf(pdf_path: str | Path) -> list[ResourceTable]:
     """
     pdf_path = Path(pdf_path)
 
-    # 验证路径
-    validated_path = validate_pdf_path(str(pdf_path), settings.pdf_data_abs_path)
+    # 如果是绝对路径，直接使用；否则使用 validate_pdf_path 检查
+    if pdf_path.is_absolute():
+        validated_path = pdf_path.resolve()
+        if not validated_path.exists():
+            raise FileNotFoundError(f"PDF 文件不存在：{validated_path}")
+    else:
+        # 相对路径：如果包含路径分隔符，只取文件名部分传给 validate_pdf_path
+        # 因为 validate_pdf_path 会自动拼接到 pdf_data_dir 后面
+        path_str = pdf_path.name if pdf_path.parent != Path('.') else str(pdf_path)
+        validated_path = validate_pdf_path(path_str, settings.pdf_data_abs_path)
 
     logger.info(f"开始解析 PDF: {validated_path}")
 

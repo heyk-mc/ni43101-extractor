@@ -214,19 +214,26 @@ def parse(pdf_path: str):
 
     用于调试 PDF 解析功能。
     """
-    tables = extract_resources_from_pdf(pdf_path)
+    # 直接使用传入的路径，提取文件名
+    from core.pdf_parser import extract_tables_pdfplumber
+    import pdfplumber
 
-    click.echo(f"\n解析结果：{len(tables)} 条记录\n")
+    pdf_path_obj = Path(pdf_path).resolve()
+    logger.info(f"开始解析 PDF: {pdf_path_obj}")
 
-    for i, table in enumerate(tables, 1):
-        click.echo(f"[{i}] {table.resource_type}")
-        click.echo(f"    矿石量：{table.ore_mt} Mt")
-        click.echo(f"    品位：{table.grade_value} {table.grade_unit}")
-        click.echo(f"    金属量：{table.metal_oz} oz / {table.metal_t} t")
-        click.echo(f"    矿种：{table.commodity}")
-        click.echo(f"    页码：{table.source_page}")
-        click.echo(f"    置信度：{table.confidence}")
-        click.echo("")
+    # 直接解析 PDF
+    try:
+        with pdfplumber.open(str(pdf_path_obj)) as pdf:
+            for i, page in enumerate(pdf.pages):
+                table = page.extract_table()
+                if table:
+                    click.echo(f"\n页码：{i + 1}")
+                    for row in table:
+                        row_str = " | ".join(str(cell) for cell in row if cell)
+                        click.echo(row_str)
+    except Exception as e:
+        click.echo(f"解析失败：{e}")
+        sys.exit(1)
 
 
 if __name__ == "__main__":
