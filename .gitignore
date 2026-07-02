@@ -1,0 +1,52 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+venv/
+.venv/
+
+# 环境变量
+.env
+.env.local
+.env.*.local
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+.DS_Store
+
+# 测试
+.pytest_cache/
+.coverage
+htmlcov/
+.coverage.*
+.tox/
+.nox/
+
+# 类型检查
+.mypy_cache/
+.dmypy.json
+dmypy.json
+
+# 数据文件 (PDF 和进化日志)
+data/pdfs/*.pdf
+data/evolution.jsonl
+*.jsonl
+
+# 日志
+logs/*.log
+*.log
+
+# 文档构建
+docs/_build/
+
+# 分发生成
+dist/
+build/
+*.egg-info/
+*.egg

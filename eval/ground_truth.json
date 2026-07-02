@@ -1,0 +1,64 @@
+{
+  "_description": "Ground truth 示例文件 - 需要用真实的 NI 43-101 PDF 数据填充",
+  "_note": "以下是示例格式，实际使用时需要替换为真实 PDF 的准确数据",
+
+  "newmont_2024.pdf": {
+    "_source": "Newmont Corporation NI 43-101 Technical Report 2024",
+    "_url": "https://www.newmont.com/investors/reports",
+    "indicated": {
+      "ore_mt": 125.5,
+      "grade_value": 2.45,
+      "grade_unit": "g/t Au",
+      "metal_oz": 9850000,
+      "metal_t": null
+    },
+    "inferred": {
+      "ore_mt": 45.2,
+      "grade_value": 2.10,
+      "grade_unit": "g/t Au",
+      "metal_oz": 3050000,
+      "metal_t": null
+    },
+    "_notes": "以上数据仅为示例，请替换为真实 PDF 中的准确数值"
+  },
+
+  "barrick_2024.pdf": {
+    "_source": "Barrick Gold Corporation NI 43-101 Technical Report 2024",
+    "_url": "https://www.barrick.com/investors/reports/",
+    "indicated": {
+      "ore_mt": 89.3,
+      "grade_value": 1.85,
+      "grade_unit": "g/t Au",
+      "metal_oz": 5320000,
+      "metal_t": null
+    },
+    "inferred": {
+      "ore_mt": 32.1,
+      "grade_value": 1.65,
+      "grade_unit": "g/t Au",
+      "metal_oz": 1700000,
+      "metal_t": null
+    },
+    "_notes": "以上数据仅为示例，请替换为真实 PDF 中的准确数值"
+  },
+
+  "pilbara_2024.pdf": {
+    "_source": "Pilbara Minerals NI 43-101 Technical Report 2024",
+    "_url": "https://www.pilbaraminerals.com.au/investors/reports/",
+    "indicated": {
+      "ore_mt": 52.8,
+      "grade_value": 1.42,
+      "grade_unit": "% Li2O",
+      "metal_oz": null,
+      "metal_t": 750000
+    },
+    "inferred": {
+      "ore_mt": 18.5,
+      "grade_value": 1.25,
+      "grade_unit": "% Li2O",
+      "metal_oz": null,
+      "metal_t": 231000
+    },
+    "_notes": "以上数据仅为示例，请替换为真实 PDF 中的准确数值"
+  }
+}
