@@ -1,5 +1,15 @@
 # Docker 使用指南
 
+## 前置要求
+
+- Docker Desktop for Windows (已安装并运行)
+- Docker Compose v2+（已包含在 Docker Desktop 中）
+
+**启动 Docker Desktop:**
+1. 打开 Docker Desktop 应用程序
+2. 等待状态显示 "Engine running"
+3. 在终端运行 `docker info` 验证
+
 ## 快速开始
 
 ### 1. 构建镜像
