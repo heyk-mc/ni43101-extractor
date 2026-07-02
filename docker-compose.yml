@@ -24,8 +24,6 @@ services:
       - ./data/evolution.jsonl:/app/data/evolution.jsonl
       # 日志输出目录（读写）
       - ./logs:/app/logs
-      # 环境变量文件（只读）
-      - ./.env:/app/.env:ro
 
     # 工作目录
     working_dir: /app
@@ -59,8 +57,3 @@ services:
 networks:
   extractor-network:
     driver: bridge
-
-# 卷声明（可选，用于持久化）
-volumes:
-  pdf-data:
-  logs:

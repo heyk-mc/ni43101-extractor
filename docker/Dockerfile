@@ -67,11 +67,11 @@ ENV PYTHONUNBUFFERED=1 \
     PIP_NO_CACHE_DIR=1
 
 # 挂载点声明
-VOLUME ["/app/data/pdfs", "/app/logs", "/app/data"]
+VOLUME ["/app/data/pdfs", "/app/logs"]
 
-# 健康检查（检查 Python 环境是否正常）
+# 健康检查（验证应用可导入）
 HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
-    CMD python -c "import sys; sys.exit(0)" || exit 1
+    CMD python -c "from core.config import settings; print('OK')" || exit 1
 
 # 默认命令
 CMD ["python", "run.py", "--help"]

@@ -30,6 +30,19 @@
 
 ## Docker 快速开始
 
+### 前置准备
+
+**在构建镜像之前**，需要完成以下准备：
+
+```bash
+# 1. 创建环境变量文件
+cp .env.example .env
+# 编辑 .env 填入 API Keys
+
+# 2. 创建进化日志文件（避免 Docker 创建目录）
+touch data/evolution.jsonl
+```
+
 ### 1. 克隆项目并进入目录
 
 ```bash
