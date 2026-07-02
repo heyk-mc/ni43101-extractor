@@ -4,9 +4,9 @@ Pytest 测试配置文件
 定义共享 fixture 和测试配置。
 """
 
-import pytest
-from pathlib import Path
 from unittest.mock import Mock
+
+import pytest
 
 
 @pytest.fixture(scope="session")
@@ -55,7 +55,7 @@ def sample_resource_table():
         commodity="Au",
         source_page=5,
         raw_text="Sample table data",
-        confidence=0.9
+        confidence=0.9,
     )
 
 
@@ -65,22 +65,12 @@ def sample_extraction_result():
     from agents.extractor_agent import ExtractionResult
 
     return ExtractionResult(
-        indicated={
-            "ore_mt": 100.5,
-            "grade_value": 2.5,
-            "grade_unit": "g/t Au",
-            "metal_oz": 8000.0
-        },
-        inferred={
-            "ore_mt": 50.2,
-            "grade_value": 2.1,
-            "grade_unit": "g/t Au",
-            "metal_oz": 3500.0
-        },
+        indicated={"ore_mt": 100.5, "grade_value": 2.5, "grade_unit": "g/t Au", "metal_oz": 8000.0},
+        inferred={"ore_mt": 50.2, "grade_value": 2.1, "grade_unit": "g/t Au", "metal_oz": 3500.0},
         confidence=0.9,
         source_pages=[5, 6],
         raw_extraction="Sample extraction output",
-        notes="High quality extraction"
+        notes="High quality extraction",
     )
 
 
@@ -92,27 +82,27 @@ def sample_ground_truth():
             "ore_mt": 100.0,
             "grade_value": 2.5,
             "grade_unit": "g/t Au",
-            "metal_oz": 8000.0
+            "metal_oz": 8000.0,
         },
         "inferred": {
             "ore_mt": 50.0,
             "grade_value": 2.1,
             "grade_unit": "g/t Au",
-            "metal_oz": 3500.0
-        }
+            "metal_oz": 3500.0,
+        },
     }
 
 
 @pytest.fixture
 def mock_anthropic_client():
     """Mock Anthropic 客户端"""
-    with pytest.importorskip('anthropic'):
+    with pytest.importorskip("anthropic"):
         from unittest.mock import Mock, patch
 
         mock_client = Mock()
         mock_client.messages.create = Mock()
 
-        with patch('anthropic.Anthropic', return_value=mock_client):
+        with patch("anthropic.Anthropic", return_value=mock_client):
             yield mock_client
 
 
@@ -120,7 +110,6 @@ def mock_anthropic_client():
 def mock_httpx_client():
     """Mock HTTPX 客户端"""
     from unittest.mock import AsyncMock, patch
-    import httpx
 
     mock_response = Mock()
     mock_response.json.return_value = {
@@ -133,5 +122,5 @@ def mock_httpx_client():
     mock_async_client.__aenter__ = AsyncMock(return_value=mock_async_client)
     mock_async_client.__aexit__ = AsyncMock(return_value=None)
 
-    with patch('httpx.AsyncClient', return_value=mock_async_client):
+    with patch("httpx.AsyncClient", return_value=mock_async_client):
         yield mock_async_client

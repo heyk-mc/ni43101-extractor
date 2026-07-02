@@ -6,18 +6,18 @@ Extractor Agent - 强模型资源量提取 Agent
 """
 
 import json
-from typing import Optional
 
 from anthropic import Anthropic
 from pydantic import BaseModel, Field
 
-from core.config import settings, get_settings
+from core.config import Settings, get_settings
 from core.logging_config import logger
 from core.pdf_parser import ResourceTable
 
 
 class ExtractionRequest(BaseModel):
     """提取请求数据结构"""
+
     pdf_text: str = Field(..., description="PDF 提取的文本内容")
     few_shot_examples: list[dict] = Field(default_factory=list, description="Few-shot 示例")
 
@@ -34,12 +34,13 @@ class ExtractionResult(BaseModel):
         raw_extraction: 原始提取输出
         notes: 提取说明或不确定之处
     """
-    indicated: Optional[dict] = Field(None, description="Indicated Resources")
-    inferred: Optional[dict] = Field(None, description="Inferred Resources")
+
+    indicated: dict | None = Field(None, description="Indicated Resources")
+    inferred: dict | None = Field(None, description="Inferred Resources")
     confidence: float = Field(..., ge=0, le=1, description="提取置信度")
     source_pages: list[int] = Field(default_factory=list, description="来源页码")
     raw_extraction: str = Field(..., description="原始提取输出")
-    notes: Optional[str] = Field(None, description="提取说明")
+    notes: str | None = Field(None, description="提取说明")
 
     def to_dict(self) -> dict:
         """转换为字典"""
@@ -53,7 +54,7 @@ class ExtractorAgent:
     使用强模型（Claude）从 NI 43-101 PDF 中提取结构化数据。
     """
 
-    def __init__(self, config: Optional[settings] = None):
+    def __init__(self, config: Settings | None = None):
         """
         初始化 Extractor Agent
 
@@ -66,11 +67,7 @@ class ExtractorAgent:
 
         logger.info(f"ExtractorAgent 已初始化，模型：{self.model}")
 
-    def build_prompt(
-        self,
-        pdf_text: str,
-        few_shot_examples: Optional[list[dict]] = None
-    ) -> str:
+    def build_prompt(self, pdf_text: str, few_shot_examples: list[dict] | None = None) -> str:
         """
         构建提取 Prompt
 
@@ -142,8 +139,12 @@ class ExtractorAgent:
             few_shot_section = "\n## 示例\n\n"
             for i, example in enumerate(few_shot_examples[:3], 1):  # 最多 3 个示例
                 few_shot_section += f"### 示例 {i}\n"
-                few_shot_section += f"输入文本摘要：{example.get('input_summary', 'N/A')[:200]}...\n"
-                few_shot_section += f"输出：\n```json\n{json.dumps(example.get('output', {}), indent=2)}\n```\n\n"
+                few_shot_section += (
+                    f"输入文本摘要：{example.get('input_summary', 'N/A')[:200]}...\n"
+                )
+                few_shot_section += (
+                    f"输出：\n```json\n{json.dumps(example.get('output', {}), indent=2)}\n```\n\n"
+                )
 
         # 用户指令
         user_instruction = f"""## 待提取的 PDF 文本
@@ -169,8 +170,8 @@ class ExtractorAgent:
     async def extract(
         self,
         pdf_text: str,
-        few_shot_examples: Optional[list[dict]] = None,
-        history: Optional[list[dict]] = None
+        few_shot_examples: list[dict] | None = None,
+        history: list[dict] | None = None,
     ) -> ExtractionResult:
         """
         执行提取
@@ -201,14 +202,7 @@ class ExtractorAgent:
         try:
             # 调用 Claude API
             response = self.client.messages.create(
-                model=self.model,
-                max_tokens=2000,
-                messages=[
-                    {
-                        "role": "user",
-                        "content": prompt
-                    }
-                ]
+                model=self.model, max_tokens=2000, messages=[{"role": "user", "content": prompt}]
             )
 
             raw_output = response.content[0].text
@@ -228,7 +222,7 @@ class ExtractorAgent:
                 confidence=0.1,
                 source_pages=[],
                 raw_extraction="",
-                notes=f"提取失败：{str(e)}"
+                notes=f"提取失败：{str(e)}",
             )
 
     def _parse_extraction_output(self, raw_output: str) -> ExtractionResult:
@@ -246,6 +240,7 @@ class ExtractorAgent:
 
         # 查找 JSON 代码块
         import re
+
         json_match = re.search(r"```json\s*(.+?)\s*```", raw_output, re.DOTALL)
         if json_match:
             json_text = json_match.group(1)
@@ -261,7 +256,7 @@ class ExtractorAgent:
                 confidence=data.get("confidence", 0.5),
                 source_pages=data.get("source_pages", []),
                 raw_extraction=raw_output,
-                notes=data.get("notes")
+                notes=data.get("notes"),
             )
         except json.JSONDecodeError as e:
             logger.warning(f"JSON 解析失败：{e}，尝试降级处理")
@@ -276,7 +271,7 @@ class ExtractorAgent:
                 confidence=confidence,
                 source_pages=[],
                 raw_extraction=raw_output,
-                notes=notes
+                notes=notes,
             )
 
     def _extract_json_braces(self, text: str) -> str:
@@ -290,7 +285,7 @@ class ExtractorAgent:
             JSON 字符串
         """
         # 找到第一个 {
-        start = text.find('{')
+        start = text.find("{")
         if start == -1:
             return text
 
@@ -304,7 +299,7 @@ class ExtractorAgent:
                 escape = False
                 continue
 
-            if char == '\\\\':
+            if char == "\\\\":
                 escape = True
                 continue
 
@@ -313,20 +308,18 @@ class ExtractorAgent:
                 continue
 
             if not in_string:
-                if char == '{':
+                if char == "{":
                     count += 1
-                elif char == '}':
+                elif char == "}":
                     count -= 1
                     if count == 0:
-                        return text[start:i + 1]
+                        return text[start : i + 1]
 
         # 如果没有找到匹配的括号，返回整个文本
         return text
 
     def extract_from_resource_tables(
-        self,
-        tables: list[ResourceTable],
-        few_shot_examples: Optional[list[dict]] = None
+        self, tables: list[ResourceTable], few_shot_examples: list[dict] | None = None
     ) -> ExtractionResult:
         """
         从已解析的表格数据中提取结构化结果
@@ -368,7 +361,7 @@ class ExtractorAgent:
 
 
 # 全局单例
-_extractor_agent: Optional[ExtractorAgent] = None
+_extractor_agent: ExtractorAgent | None = None
 
 
 def get_extractor_agent() -> ExtractorAgent:

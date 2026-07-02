@@ -6,14 +6,13 @@ CriticMaster Agent - 弱模型评分 Agent
 """
 
 import json
-from typing import Optional, Tuple
 
 import httpx
 from pydantic import BaseModel, Field
 
-from core.config import get_settings, Settings
-from core.logging_config import logger
 from agents.extractor_agent import ExtractionResult
+from core.config import Settings, get_settings
+from core.logging_config import logger
 
 
 class CriticismResult(BaseModel):
@@ -26,10 +25,11 @@ class CriticismResult(BaseModel):
         issues: 发现的问题列表
         suggestion: 具体修改建议
     """
+
     score: int = Field(..., ge=1, le=10, description="评分 (1-10)")
     feedback: str = Field(..., description="修改建议")
     issues: list[str] = Field(default_factory=list, description="发现的问题")
-    suggestion: Optional[str] = Field(None, description="具体修改建议")
+    suggestion: str | None = Field(None, description="具体修改建议")
 
     def to_dict(self) -> dict:
         """转换为字典"""
@@ -43,7 +43,7 @@ class CriticMasterAgent:
     使用较弱模型（Qwen/GLM）对提取结果进行评分，降低成本。
     """
 
-    def __init__(self, config: Optional[Settings] = None):
+    def __init__(self, config: Settings | None = None):
         """
         初始化 CriticMaster Agent
 
@@ -60,9 +60,7 @@ class CriticMasterAgent:
         logger.info(f"CriticMasterAgent 已初始化，模型：{self.model}")
 
     def build_prompt(
-        self,
-        extraction_result: ExtractionResult,
-        history: Optional[list[dict]] = None
+        self, extraction_result: ExtractionResult, history: list[dict] | None = None
     ) -> str:
         """
         构建评分 Prompt
@@ -185,9 +183,7 @@ notes: {extraction_result.notes or '无'}
         return system_instruction + user_instruction
 
     async def score(
-        self,
-        extraction_result: ExtractionResult,
-        history: Optional[list[dict]] = None
+        self, extraction_result: ExtractionResult, history: list[dict] | None = None
     ) -> CriticismResult:
         """
         对提取结果进行评分
@@ -213,27 +209,18 @@ notes: {extraction_result.notes or '无'}
             # 调用 DashScope API
             headers = {
                 "Authorization": f"Bearer {self.api_key}",
-                "Content-Type": "application/json"
+                "Content-Type": "application/json",
             }
 
             payload = {
                 "model": self.model,
-                "messages": [
-                    {
-                        "role": "user",
-                        "content": prompt
-                    }
-                ],
+                "messages": [{"role": "user", "content": prompt}],
                 "temperature": 0.3,
-                "max_tokens": 500
+                "max_tokens": 500,
             }
 
             async with httpx.AsyncClient(timeout=30.0) as client:
-                response = await client.post(
-                    self.api_url,
-                    headers=headers,
-                    json=payload
-                )
+                response = await client.post(self.api_url, headers=headers, json=payload)
                 response.raise_for_status()
 
                 data = response.json()
@@ -264,6 +251,7 @@ notes: {extraction_result.notes or '无'}
         json_text = raw_output
 
         import re
+
         json_match = re.search(r"```json\s*(.+?)\s*```", raw_output, re.DOTALL)
         if json_match:
             json_text = json_match.group(1)
@@ -278,7 +266,7 @@ notes: {extraction_result.notes or '无'}
                 score=data.get("score", 5),
                 feedback=data.get("feedback", ""),
                 issues=data.get("issues", []),
-                suggestion=data.get("suggestion")
+                suggestion=data.get("suggestion"),
             )
         except json.JSONDecodeError as e:
             logger.warning(f"JSON 解析失败：{e}，使用默认评分")
@@ -291,7 +279,7 @@ notes: {extraction_result.notes or '无'}
                 score=score,
                 feedback=raw_output[:500],
                 issues=["JSON 解析失败"],
-                suggestion="请手动检查提取结果"
+                suggestion="请手动检查提取结果",
             )
 
     def _mock_score(self, extraction_result: ExtractionResult) -> CriticismResult:
@@ -364,12 +352,12 @@ notes: {extraction_result.notes or '无'}
             score=score,
             feedback="; ".join(feedback_parts),
             issues=issues,
-            suggestion=f"建议检查：{', '.join(issues)}" if issues else "无明显问题"
+            suggestion=f"建议检查：{', '.join(issues)}" if issues else "无明显问题",
         )
 
 
 # 全局单例
-_critic_master_agent: Optional[CriticMasterAgent] = None
+_critic_master_agent: CriticMasterAgent | None = None
 
 
 def get_critic_master_agent() -> CriticMasterAgent:

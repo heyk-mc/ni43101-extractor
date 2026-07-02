@@ -4,9 +4,9 @@
 从环境变量读取配置，提供类型安全的配置访问。
 """
 
-from pydantic_settings import BaseSettings, SettingsConfigDict
-from typing import Optional
 from pathlib import Path
+
+from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
 class Settings(BaseSettings):
@@ -32,7 +32,7 @@ class Settings(BaseSettings):
     # -----------------------------
     # 可选：DashScope API 配置 (Qwen)
     # -----------------------------
-    dashscope_api_key: Optional[str] = None
+    dashscope_api_key: str | None = None
     qwen_model: str = "qwen-max"
 
     # -----------------------------

@@ -3,20 +3,16 @@ PDF 解析模块单元测试
 """
 
 import pytest
-from pathlib import Path
-from unittest.mock import Mock, patch
 
 from core.pdf_parser import (
+    ResourceTable,
+    calculate_confidence,
+    detect_commodity,
+    detect_resource_type,
+    extract_grade_unit,
     extract_tables_pdfplumber,
-    extract_tables_pypdf,
     is_resource_table,
     parse_number,
-    parse_table,
-    detect_resource_type,
-    detect_commodity,
-    extract_grade_unit,
-    calculate_confidence,
-    ResourceTable,
 )
 
 
@@ -129,10 +125,7 @@ class TestResourceTable:
 
     def test_to_dict(self):
         table = ResourceTable(
-            resource_type="Indicated",
-            ore_mt=100.5,
-            grade_value=2.5,
-            grade_unit="g/t Au"
+            resource_type="Indicated", ore_mt=100.5, grade_value=2.5, grade_unit="g/t Au"
         )
         d = table.to_dict()
         assert d["resource_type"] == "Indicated"
@@ -149,7 +142,7 @@ class TestCalculateConfidence:
             grade_value=2.5,
             grade_unit="g/t Au",
             metal_oz=8000.0,
-            commodity="Au"
+            commodity="Au",
         )
         assert calculate_confidence(table) == 1.0
 

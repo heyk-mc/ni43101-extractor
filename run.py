@@ -7,16 +7,15 @@ NI 43101 提取系统 - 主入口
 import asyncio
 import sys
 from pathlib import Path
-from typing import Optional
 
 import click
 
-from core.config import get_settings, settings
+from core.config import settings
+from core.evolution_log import get_evolution_log
 from core.logging_config import logger
 from core.pdf_parser import extract_resources_from_pdf
-from core.revise_loop import run_extraction, RevisionOutput
-from core.evolution_log import get_evolution_log, EvolutionLog
-from eval.metrics import load_ground_truth, evaluate_single, generate_report
+from core.revise_loop import RevisionOutput, run_extraction
+from eval.metrics import evaluate_single, generate_report, load_ground_truth
 
 
 @click.group()
@@ -44,25 +43,10 @@ def main():
 
 @main.command()
 @click.argument("pdf_path", type=click.Path(exists=True))
-@click.option(
-    "--few-shot",
-    "-f",
-    type=click.Path(exists=True),
-    help="Few-shot 示例 JSON 文件路径"
-)
-@click.option(
-    "--output",
-    "-o",
-    type=click.Path(),
-    help="输出结果路径 (JSON)"
-)
-@click.option(
-    "--verbose",
-    "-v",
-    is_flag=True,
-    help="详细输出"
-)
-def extract(pdf_path: str, few_shot: Optional[str], output: Optional[str], verbose: bool):
+@click.option("--few-shot", "-f", type=click.Path(exists=True), help="Few-shot 示例 JSON 文件路径")
+@click.option("--output", "-o", type=click.Path(), help="输出结果路径 (JSON)")
+@click.option("--verbose", "-v", is_flag=True, help="详细输出")
+def extract(pdf_path: str, few_shot: str | None, output: str | None, verbose: bool):
     """
     提取单个 PDF 的资源量数据
 
@@ -72,7 +56,8 @@ def extract(pdf_path: str, few_shot: Optional[str], output: Optional[str], verbo
     few_shot_examples = None
     if few_shot:
         import json
-        with open(few_shot, "r", encoding="utf-8") as f:
+
+        with open(few_shot, encoding="utf-8") as f:
             few_shot_examples = json.load(f)
 
     # 运行提取
@@ -105,6 +90,7 @@ def extract(pdf_path: str, few_shot: Optional[str], output: Optional[str], verbo
     # 保存结果
     if output:
         import json
+
         output_path = Path(output)
         output_path.parent.mkdir(parents=True, exist_ok=True)
         with open(output_path, "w", encoding="utf-8") as f:
@@ -128,21 +114,12 @@ def extract(pdf_path: str, few_shot: Optional[str], output: Optional[str], verbo
     "-t",
     type=click.Path(exists=True),
     default="eval/ground_truth.json",
-    help="Ground truth JSON 路径"
+    help="Ground truth JSON 路径",
 )
 @click.option(
-    "--output",
-    "-o",
-    type=click.Path(),
-    default="eval/report.txt",
-    help="评测报告输出路径"
+    "--output", "-o", type=click.Path(), default="eval/report.txt", help="评测报告输出路径"
 )
-@click.option(
-    "--tolerance",
-    type=float,
-    default=0.05,
-    help="容差（默认 0.05 表示±5%）"
-)
+@click.option("--tolerance", type=float, default=0.05, help="容差（默认 0.05 表示±5%）")
 def evaluate(truth: str, output: str, tolerance: float):
     """
     批量提取并评测
@@ -174,27 +151,20 @@ def evaluate(truth: str, output: str, tolerance: float):
             click.echo(f"\n处理：{pdf_name}")
 
             if pdf_name not in ground_truths:
-                click.echo(f"  跳过：没有 ground truth")
+                click.echo("  跳过：没有 ground truth")
                 continue
 
             try:
                 output_result = await run_extraction(str(pdf_file))
 
                 eval_result = evaluate_single(
-                    output_result,
-                    ground_truths[pdf_name],
-                    pdf_name,
-                    tolerance
+                    output_result, ground_truths[pdf_name], pdf_name, tolerance
                 )
                 results.append((pdf_name, output_result, eval_result))
 
                 # 记录进化日志
                 evol_log = get_evolution_log()
-                evol_log.log(
-                    pdf_name,
-                    output_result,
-                    ground_truths[pdf_name]
-                )
+                evol_log.log(pdf_name, output_result, ground_truths[pdf_name])
 
             except Exception as e:
                 click.echo(f"  错误：{e}")
@@ -203,7 +173,6 @@ def evaluate(truth: str, output: str, tolerance: float):
     asyncio.run(run_all())
 
     # 生成报告
-    from eval.metrics import EvalResult
     eval_results = [r[2] for r in results]
     report = generate_report(eval_results)
 

@@ -6,16 +6,15 @@ PDF 解析模块
 """
 
 import re
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from pathlib import Path
-from typing import Optional
 
 import pdfplumber
 from pypdf import PdfReader
 
+from core.config import settings
 from core.logging_config import logger
 from core.path_utils import validate_pdf_path
-from core.config import settings
 
 
 @dataclass
@@ -35,14 +34,15 @@ class ResourceTable:
         raw_text: 原始表格文本
         confidence: 提取置信度 (0-1)
     """
+
     resource_type: str
-    ore_mt: Optional[float] = None
-    grade_value: Optional[float] = None
-    grade_unit: Optional[str] = None
-    metal_oz: Optional[float] = None
-    metal_t: Optional[float] = None
-    commodity: Optional[str] = None
-    source_page: Optional[int] = None
+    ore_mt: float | None = None
+    grade_value: float | None = None
+    grade_unit: str | None = None
+    metal_oz: float | None = None
+    metal_t: float | None = None
+    commodity: str | None = None
+    source_page: int | None = None
     raw_text: str = ""
     confidence: float = 0.0
 
@@ -153,12 +153,23 @@ def is_resource_table(table: list[list[str]]) -> bool:
     """
     # 资源量表格关键词
     keywords = [
-        "indicated", "inferred", "measured",
-        "resources", "reserves",
-        "tonnes", "million tonnes", "mt",
-        "grade", "g/t", "oz",
-        "au", "cu", "gold", "copper",
-        "ni 43-101", "ni43101",
+        "indicated",
+        "inferred",
+        "measured",
+        "resources",
+        "reserves",
+        "tonnes",
+        "million tonnes",
+        "mt",
+        "grade",
+        "g/t",
+        "oz",
+        "au",
+        "cu",
+        "gold",
+        "copper",
+        "ni 43-101",
+        "ni43101",
     ]
 
     # 检查表头（通常是第一行）
@@ -174,7 +185,7 @@ def is_resource_table(table: list[list[str]]) -> bool:
     return match_count >= 2
 
 
-def parse_number(text: str) -> Optional[float]:
+def parse_number(text: str) -> float | None:
     """
     从文本中解析数字
 
@@ -288,7 +299,7 @@ def parse_table(table: list[list[str]], page: int) -> list[ResourceTable]:
     return results
 
 
-def detect_resource_type(row: list[str]) -> Optional[str]:
+def detect_resource_type(row: list[str]) -> str | None:
     """
     从行数据中检测资源类型
 
@@ -314,7 +325,7 @@ def detect_resource_type(row: list[str]) -> Optional[str]:
     return None
 
 
-def detect_commodity(table: list[list[str]]) -> Optional[str]:
+def detect_commodity(table: list[list[str]]) -> str | None:
     """
     检测矿产品种
 
@@ -425,10 +436,7 @@ def extract_resources_from_pdf(pdf_path: str | Path) -> list[ResourceTable]:
     pdf_path = Path(pdf_path)
 
     # 验证路径
-    validated_path = validate_pdf_path(
-        str(pdf_path),
-        settings.pdf_data_abs_path
-    )
+    validated_path = validate_pdf_path(str(pdf_path), settings.pdf_data_abs_path)
 
     logger.info(f"开始解析 PDF: {validated_path}")
 

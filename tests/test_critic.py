@@ -2,13 +2,13 @@
 CriticMaster Agent 单元测试
 """
 
+from unittest.mock import Mock, patch
+
 import pytest
-from unittest.mock import Mock, AsyncMock, patch
-import json
 
 from agents.critic_master import (
-    CriticMasterAgent,
     CriticismResult,
+    CriticMasterAgent,
 )
 from agents.extractor_agent import ExtractionResult
 
@@ -17,20 +17,14 @@ class TestCriticismResult:
     """测试 CriticismResult 数据类"""
 
     def test_create_default(self):
-        result = CriticismResult(
-            score=7,
-            feedback="Good extraction"
-        )
+        result = CriticismResult(score=7, feedback="Good extraction")
 
         assert result.score == 7
         assert result.issues == []
 
     def test_to_dict(self):
         result = CriticismResult(
-            score=8,
-            feedback="Good",
-            issues=["Missing unit"],
-            suggestion="Add unit"
+            score=8, feedback="Good", issues=["Missing unit"], suggestion="Add unit"
         )
 
         d = result.to_dict()
@@ -62,7 +56,7 @@ class TestCriticMasterAgent:
             indicated={"ore_mt": 100.0, "grade_value": 2.5},
             inferred={"ore_mt": 50.0},
             confidence=0.8,
-            raw_extraction="Test extraction output"
+            raw_extraction="Test extraction output",
         )
 
         prompt = critic.build_prompt(extraction_result)
@@ -73,13 +67,8 @@ class TestCriticMasterAgent:
         assert "50.0" in prompt
 
     def test_build_prompt_with_history(self, critic):
-        extraction_result = ExtractionResult(
-            confidence=0.7,
-            raw_extraction="test"
-        )
-        history = [
-            {"score": 5, "feedback": "Missing grade", "suggestion": "Add grade value"}
-        ]
+        extraction_result = ExtractionResult(confidence=0.7, raw_extraction="test")
+        history = [{"score": 5, "feedback": "Missing grade", "suggestion": "Add grade value"}]
 
         prompt = critic.build_prompt(extraction_result, history)
 
@@ -87,14 +76,14 @@ class TestCriticMasterAgent:
         assert "Missing grade" in prompt
 
     def test_parse_criticism_output_json(self, critic):
-        raw_output = '''```json
+        raw_output = """```json
 {
     "score": 8,
     "feedback": "Good extraction",
     "issues": ["Minor formatting"],
     "suggestion": "Improve formatting"
 }
-```'''
+```"""
 
         result = critic._parse_criticism_output(raw_output)
 
@@ -117,10 +106,7 @@ class TestCriticMasterAgent:
 
     def test_mock_score_both_missing(self, critic):
         extraction_result = ExtractionResult(
-            indicated=None,
-            inferred=None,
-            confidence=0.5,
-            raw_extraction="test"
+            indicated=None, inferred=None, confidence=0.5, raw_extraction="test"
         )
 
         result = critic._mock_score(extraction_result)
@@ -130,10 +116,7 @@ class TestCriticMasterAgent:
 
     def test_mock_score_indicated_missing(self, critic):
         extraction_result = ExtractionResult(
-            indicated=None,
-            inferred={"ore_mt": 50.0},
-            confidence=0.7,
-            raw_extraction="test"
+            indicated=None, inferred={"ore_mt": 50.0}, confidence=0.7, raw_extraction="test"
         )
 
         result = critic._mock_score(extraction_result)
@@ -143,10 +126,7 @@ class TestCriticMasterAgent:
 
     def test_mock_score_inferred_missing(self, critic):
         extraction_result = ExtractionResult(
-            indicated={"ore_mt": 100.0},
-            inferred=None,
-            confidence=0.7,
-            raw_extraction="test"
+            indicated={"ore_mt": 100.0}, inferred=None, confidence=0.7, raw_extraction="test"
         )
 
         result = critic._mock_score(extraction_result)
@@ -159,7 +139,7 @@ class TestCriticMasterAgent:
             indicated={"ore_mt": 100.0},  # 只有 ore_mt
             inferred={"ore_mt": 50.0},
             confidence=0.9,
-            raw_extraction="test"
+            raw_extraction="test",
         )
 
         result = critic._mock_score(extraction_result)
@@ -169,13 +149,10 @@ class TestCriticMasterAgent:
 
     @pytest.mark.asyncio
     async def test_score_api_error(self, critic):
-        extraction_result = ExtractionResult(
-            confidence=0.5,
-            raw_extraction="test"
-        )
+        extraction_result = ExtractionResult(confidence=0.5, raw_extraction="test")
 
         # 模拟 API 调用失败
-        with patch('httpx.AsyncClient.post') as mock_post:
+        with patch("httpx.AsyncClient.post") as mock_post:
             mock_post.side_effect = Exception("Connection error")
 
             result = await critic.score(extraction_result)
@@ -188,9 +165,7 @@ class TestCriticMasterAgent:
         critic.api_key = None
 
         extraction_result = ExtractionResult(
-            indicated={"ore_mt": 100.0},
-            confidence=0.8,
-            raw_extraction="test"
+            indicated={"ore_mt": 100.0}, confidence=0.8, raw_extraction="test"
         )
 
         result = await critic.score(extraction_result)
@@ -203,13 +178,10 @@ class TestGetCriticMasterAgent:
     """测试单例获取函数"""
 
     def test_get_critic_master_agent_singleton(self):
-        from agents.critic_master import (
-            get_critic_master_agent,
-            _critic_master_agent
-        )
-
         # 重置单例
         import agents.critic_master as cm
+        from agents.critic_master import get_critic_master_agent
+
         cm._critic_master_agent = None
 
         agent1 = get_critic_master_agent()

@@ -5,19 +5,17 @@
 """
 
 import json
-from pathlib import Path
-from typing import Optional
 from dataclasses import dataclass
 
-from core.config import get_settings
+from agents.extractor_agent import ExtractionResult
 from core.logging_config import logger
 from core.revise_loop import RevisionOutput
-from agents.extractor_agent import ExtractionResult
 
 
 @dataclass
 class EvalResult:
     """评测结果"""
+
     pdf_name: str
     status: str  # success, abstain
     accuracy: float  # 0-1
@@ -32,7 +30,7 @@ class EvalResult:
             "accuracy": self.accuracy,
             "total_rounds": self.total_rounds,
             "max_score": self.max_score,
-            "abstained": self.abstained
+            "abstained": self.abstained,
         }
 
 
@@ -46,14 +44,12 @@ def load_ground_truth(truth_path: str) -> dict:
     Returns:
         ground truth 字典
     """
-    with open(truth_path, "r", encoding="utf-8") as f:
+    with open(truth_path, encoding="utf-8") as f:
         return json.load(f)
 
 
 def calculate_accuracy(
-    result: ExtractionResult,
-    ground_truth: dict,
-    tolerance: float = 0.05
+    result: ExtractionResult, ground_truth: dict, tolerance: float = 0.05
 ) -> float:
     """
     计算提取准确率
@@ -107,10 +103,7 @@ def _within_tolerance(predicted: float, expected: float, tolerance: float) -> bo
 
 
 def evaluate_single(
-    output: RevisionOutput,
-    ground_truth: dict,
-    pdf_name: str,
-    tolerance: float = 0.05
+    output: RevisionOutput, ground_truth: dict, pdf_name: str, tolerance: float = 0.05
 ) -> EvalResult:
     """
     评估单次提取
@@ -136,14 +129,14 @@ def evaluate_single(
         accuracy=accuracy,
         total_rounds=output.total_rounds,
         max_score=max_score,
-        abstained=output.status == "abstain"
+        abstained=output.status == "abstain",
     )
 
 
 def run_evaluation(
     results: list[tuple[str, RevisionOutput]],
     ground_truths: dict[str, dict],
-    tolerance: float = 0.05
+    tolerance: float = 0.05,
 ) -> list[EvalResult]:
     """
     批量评估
@@ -163,12 +156,7 @@ def run_evaluation(
             logger.warning(f"未找到 {pdf_name} 的 ground truth，跳过")
             continue
 
-        eval_result = evaluate_single(
-            output,
-            ground_truths[pdf_name],
-            pdf_name,
-            tolerance
-        )
+        eval_result = evaluate_single(output, ground_truths[pdf_name], pdf_name, tolerance)
         eval_results.append(eval_result)
 
     return eval_results

@@ -5,15 +5,14 @@
 驱动 Extractor Agent 和 CriticMaster Agent 的协作。
 """
 
-from dataclasses import dataclass, field
-from typing import Optional
 import asyncio
+from dataclasses import dataclass, field
 
-from core.config import get_settings, Settings
+from agents.critic_master import CriticMasterAgent, get_critic_master_agent
+from agents.extractor_agent import ExtractionResult, ExtractorAgent, get_extractor_agent
+from core.config import Settings, get_settings
 from core.logging_config import logger
-from core.pdf_parser import extract_resources_from_pdf, ResourceTable
-from agents.extractor_agent import ExtractorAgent, ExtractionResult, get_extractor_agent
-from agents.critic_master import CriticMasterAgent, CriticismResult, get_critic_master_agent
+from core.pdf_parser import ResourceTable, extract_resources_from_pdf
 
 
 @dataclass
@@ -28,6 +27,7 @@ class RevisionRound:
         feedback: 反馈
         success: 是否成功
     """
+
     round_num: int
     result: ExtractionResult
     score: int
@@ -47,11 +47,12 @@ class RevisionOutput:
         total_rounds: 总轮次数
         reason: 原因说明（abstain 时填写）
     """
-    final_result: Optional[ExtractionResult]
+
+    final_result: ExtractionResult | None
     status: str  # success, abstain, max_rounds
     rounds: list[RevisionRound] = field(default_factory=list)
     total_rounds: int = 0
-    reason: Optional[str] = None
+    reason: str | None = None
 
     def to_dict(self) -> dict:
         """转换为字典"""
@@ -63,12 +64,12 @@ class RevisionOutput:
                     "round_num": r.round_num,
                     "score": r.score,
                     "feedback": r.feedback,
-                    "success": r.success
+                    "success": r.success,
                 }
                 for r in self.rounds
             ],
             "total_rounds": self.total_rounds,
-            "reason": self.reason
+            "reason": self.reason,
         }
 
 
@@ -82,9 +83,9 @@ class ReviseLoop:
 
     def __init__(
         self,
-        extractor: Optional[ExtractorAgent] = None,
-        critic: Optional[CriticMasterAgent] = None,
-        config: Optional[Settings] = None
+        extractor: ExtractorAgent | None = None,
+        critic: CriticMasterAgent | None = None,
+        config: Settings | None = None,
     ):
         """
         初始化修订循环
@@ -108,9 +109,7 @@ class ReviseLoop:
         )
 
     async def run(
-        self,
-        pdf_path: str,
-        few_shot_examples: Optional[list[dict]] = None
+        self, pdf_path: str, few_shot_examples: list[dict] | None = None
     ) -> RevisionOutput:
         """
         运行修订循环
@@ -122,11 +121,7 @@ class ReviseLoop:
         Returns:
             RevisionOutput 修订输出
         """
-        output = RevisionOutput(
-            final_result=None,
-            status="running",
-            rounds=[]
-        )
+        output = RevisionOutput(final_result=None, status="running", rounds=[])
 
         # 步骤 1: 解析 PDF 获取表格数据
         logger.info(f"步骤 1: 解析 PDF: {pdf_path}")
@@ -151,9 +146,7 @@ class ReviseLoop:
 
             # 提取
             result = await self.extractor.extract(
-                pdf_text=pdf_text,
-                few_shot_examples=current_few_shot,
-                history=history
+                pdf_text=pdf_text, few_shot_examples=current_few_shot, history=history
             )
 
             # 评分
@@ -167,7 +160,7 @@ class ReviseLoop:
                 result=result,
                 score=criticism.score,
                 feedback=criticism.feedback,
-                success=criticism.score >= self.score_threshold
+                success=criticism.score >= self.score_threshold,
             )
             output.rounds.append(round_data)
             output.total_rounds = round_num
@@ -180,12 +173,14 @@ class ReviseLoop:
                 return output
 
             # 准备下一轮
-            history.append({
-                "score": criticism.score,
-                "feedback": criticism.feedback,
-                "suggestion": criticism.suggestion,
-                "result": result.to_dict()
-            })
+            history.append(
+                {
+                    "score": criticism.score,
+                    "feedback": criticism.feedback,
+                    "suggestion": criticism.suggestion,
+                    "result": result.to_dict(),
+                }
+            )
 
         # 达到最大轮次，仍未达到阈值
         logger.warning(f"达到最大修订轮次 ({self.max_rounds})，返回 abstain")
@@ -221,8 +216,7 @@ class ReviseLoop:
 
 
 async def run_extraction(
-    pdf_path: str,
-    few_shot_examples: Optional[list[dict]] = None
+    pdf_path: str, few_shot_examples: list[dict] | None = None
 ) -> RevisionOutput:
     """
     运行完整提取流程的便捷函数

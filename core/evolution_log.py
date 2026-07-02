@@ -6,10 +6,9 @@
 
 import json
 from datetime import datetime
-from pathlib import Path
-from typing import Optional, Any
+from typing import Any
 
-from core.config import get_settings, Settings
+from core.config import Settings, get_settings
 from core.logging_config import logger
 from core.revise_loop import RevisionOutput
 
@@ -21,7 +20,7 @@ class EvolutionLog:
     记录每次提取的结果，特别是失败案例，用于后续 few-shot 学习。
     """
 
-    def __init__(self, config: Optional[Settings] = None):
+    def __init__(self, config: Settings | None = None):
         """
         初始化进化日志
 
@@ -40,8 +39,8 @@ class EvolutionLog:
         self,
         pdf_path: str,
         output: RevisionOutput,
-        ground_truth: Optional[dict] = None,
-        extra_info: Optional[dict] = None
+        ground_truth: dict | None = None,
+        extra_info: dict | None = None,
     ) -> None:
         """
         记录一次提取结果
@@ -64,7 +63,7 @@ class EvolutionLog:
                     "round_num": r.round_num,
                     "score": r.score,
                     "feedback": r.feedback,
-                    "success": r.success
+                    "success": r.success,
                 }
                 for r in output.rounds
             ],
@@ -73,9 +72,7 @@ class EvolutionLog:
         # 如果有 ground truth，计算 accuracy
         if ground_truth and output.final_result:
             accuracy = self._calculate_accuracy(
-                output.final_result,
-                ground_truth,
-                self.config.tolerance_percent
+                output.final_result, ground_truth, self.config.tolerance_percent
             )
             entry["accuracy"] = accuracy
 
@@ -101,11 +98,7 @@ class EvolutionLog:
         with open(self.log_path, "a", encoding="utf-8") as f:
             f.write(json.dumps(entry, ensure_ascii=False) + "\n")
 
-    def _is_failure(
-        self,
-        output: RevisionOutput,
-        ground_truth: Optional[dict] = None
-    ) -> bool:
+    def _is_failure(self, output: RevisionOutput, ground_truth: dict | None = None) -> bool:
         """
         判断是否为失败案例
 
@@ -123,9 +116,7 @@ class EvolutionLog:
         # 如果有 ground truth，检查 accuracy
         if ground_truth and output.final_result:
             accuracy = self._calculate_accuracy(
-                output.final_result,
-                ground_truth,
-                self.config.tolerance_percent
+                output.final_result, ground_truth, self.config.tolerance_percent
             )
             if accuracy < 0.5:  # 准确率低于 50% 视为失败
                 return True
@@ -138,12 +129,7 @@ class EvolutionLog:
 
         return False
 
-    def _calculate_accuracy(
-        self,
-        result: Any,
-        ground_truth: dict,
-        tolerance: float
-    ) -> float:
+    def _calculate_accuracy(self, result: Any, ground_truth: dict, tolerance: float) -> float:
         """
         计算提取准确率
 
@@ -188,12 +174,7 @@ class EvolutionLog:
 
         return correct_count / total_count
 
-    def _within_tolerance(
-        self,
-        predicted: float,
-        expected: float,
-        tolerance: float
-    ) -> bool:
+    def _within_tolerance(self, predicted: float, expected: float, tolerance: float) -> bool:
         """
         检查预测值是否在容差范围内
 
@@ -211,11 +192,7 @@ class EvolutionLog:
         relative_error = abs(predicted - expected) / abs(expected)
         return relative_error <= tolerance
 
-    def get_few_shot_examples(
-        self,
-        limit: int = 5,
-        success_only: bool = True
-    ) -> list[dict]:
+    def get_few_shot_examples(self, limit: int = 5, success_only: bool = True) -> list[dict]:
         """
         获取 few-shot 示例
 
@@ -233,7 +210,7 @@ class EvolutionLog:
         examples = []
 
         try:
-            with open(self.log_path, "r", encoding="utf-8") as f:
+            with open(self.log_path, encoding="utf-8") as f:
                 for line in f:
                     entry = json.loads(line.strip())
 
@@ -243,7 +220,7 @@ class EvolutionLog:
                     # 构建 few-shot 示例
                     example = {
                         "input_summary": f"PDF: {entry['pdf_path']}, 状态：{entry['status']}",
-                        "output": entry.get("final_result")
+                        "output": entry.get("final_result"),
                     }
                     examples.append(example)
 
@@ -273,7 +250,7 @@ class EvolutionLog:
         accuracies = []
 
         try:
-            with open(self.log_path, "r", encoding="utf-8") as f:
+            with open(self.log_path, encoding="utf-8") as f:
                 for line in f:
                     entry = json.loads(line.strip())
                     total += 1
@@ -300,12 +277,12 @@ class EvolutionLog:
             "abstain": abstain,
             "success_rate": success / total if total > 0 else 0,
             "avg_rounds": total_rounds / total if total > 0 else 0,
-            "avg_accuracy": sum(accuracies) / len(accuracies) if accuracies else 0
+            "avg_accuracy": sum(accuracies) / len(accuracies) if accuracies else 0,
         }
 
 
 # 全局单例
-_evolution_log: Optional[EvolutionLog] = None
+_evolution_log: EvolutionLog | None = None
 
 
 def get_evolution_log() -> EvolutionLog:
