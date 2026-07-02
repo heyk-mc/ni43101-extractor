@@ -1,0 +1,68 @@
+version: "3.8"
+
+services:
+  extractor:
+    build:
+      context: .
+      dockerfile: docker/Dockerfile
+      target: runtime
+    image: ni43101-extractor:latest
+    container_name: ni43101-extractor
+    restart: "no"
+
+    # 环境变量
+    env_file:
+      - .env
+
+    # 环境变量覆盖（可选）
+    environment:
+      - LOG_LEVEL=INFO
+
+    # 数据卷挂载
+    volumes:
+      # PDF 输入目录（只读）
+      - ./data/pdfs:/app/data/pdfs:ro
+      # 进化日志（读写）
+      - ./data/evolution.jsonl:/app/data/evolution.jsonl
+      # 日志输出目录（读写）
+      - ./logs:/app/logs
+      # 环境变量文件（只读）
+      - ./.env:/app/.env:ro
+
+    # 工作目录
+    working_dir: /app
+
+    # 覆盖默认命令
+    # command: ["python", "run.py", "extract", "data/pdfs/sample.pdf", "-v"]
+
+    # 网络配置
+    networks:
+      - extractor-network
+
+  # 批量处理服务（可选）
+  batch-extractor:
+    extends:
+      service: extractor
+    container_name: ni43101-extractor-batch
+    command: ["python", "run.py", "evaluate"]
+    profiles:
+      - batch
+
+  # 统计服务（可选）
+  stats:
+    extends:
+      service: extractor
+    container_name: ni43101-extractor-stats
+    command: ["python", "run.py", "stats"]
+    profiles:
+      - stats
+
+# 网络配置
+networks:
+  extractor-network:
+    driver: bridge
+
+# 卷声明（可选，用于持久化）
+volumes:
+  pdf-data:
+  logs:
