@@ -55,8 +55,7 @@ class TestExtractorAgent:
             agent = ExtractorAgent(config=mock_config)
             assert agent.model == mock_config.deepseek_model
             mock_openai.assert_called_once_with(
-                api_key=mock_config.deepseek_api_key,
-                base_url="https://api.deepseek.com"
+                api_key=mock_config.deepseek_api_key, base_url="https://api.deepseek.com"
             )
 
     def test_build_prompt(self, extractor):
@@ -107,7 +106,11 @@ class TestExtractorAgent:
     async def test_extract_success(self, extractor):
         with patch.object(extractor.client.chat.completions, "create") as mock_create:
             mock_create.return_value = Mock(
-                choices=[Mock(message=Mock(content='{"indicated": {"ore_mt": 100.0}, "confidence": 0.9}'))]
+                choices=[
+                    Mock(
+                        message=Mock(content='{"indicated": {"ore_mt": 100.0}, "confidence": 0.9}')
+                    )
+                ]
             )
 
             result = await extractor.extract("Test PDF content")
@@ -121,7 +124,11 @@ class TestExtractorAgent:
 
         with patch.object(extractor.client.chat.completions, "create") as mock_create:
             mock_create.return_value = Mock(
-                choices=[Mock(message=Mock(content='{"indicated": {"ore_mt": 100.0}, "confidence": 0.8}'))]
+                choices=[
+                    Mock(
+                        message=Mock(content='{"indicated": {"ore_mt": 100.0}, "confidence": 0.8}')
+                    )
+                ]
             )
 
             result = await extractor.extract("Test content", history=history)

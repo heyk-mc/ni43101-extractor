@@ -64,8 +64,7 @@ class ExtractorAgent:
         self.config = config or get_settings()
         # DeepSeek API 使用 OpenAI 兼容接口
         self.client = OpenAI(
-            api_key=self.config.deepseek_api_key,
-            base_url="https://api.deepseek.com"
+            api_key=self.config.deepseek_api_key, base_url="https://api.deepseek.com"
         )
         self.model = self.config.deepseek_model
 
@@ -206,8 +205,7 @@ class ExtractorAgent:
         try:
             # 调用 DeepSeek API (OpenAI 兼容接口)
             response = self.client.chat.completions.create(
-                model=self.model,
-                messages=[{"role": "user", "content": prompt}]
+                model=self.model, messages=[{"role": "user", "content": prompt}]
             )
 
             raw_output = response.choices[0].message.content

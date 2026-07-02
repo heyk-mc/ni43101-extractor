@@ -443,7 +443,7 @@ def extract_resources_from_pdf(pdf_path: str | Path) -> list[ResourceTable]:
     else:
         # 相对路径：如果包含路径分隔符，只取文件名部分传给 validate_pdf_path
         # 因为 validate_pdf_path 会自动拼接到 pdf_data_dir 后面
-        path_str = pdf_path.name if pdf_path.parent != Path('.') else str(pdf_path)
+        path_str = pdf_path.name if pdf_path.parent != Path(".") else str(pdf_path)
         validated_path = validate_pdf_path(path_str, settings.pdf_data_abs_path)
 
     logger.info(f"开始解析 PDF: {validated_path}")
