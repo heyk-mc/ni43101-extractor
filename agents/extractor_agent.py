@@ -247,11 +247,7 @@ class ExtractorAgent:
         import re
 
         json_match = re.search(r"```json\s*(.+?)\s*```", raw_output, re.DOTALL)
-        if json_match:
-            json_text = json_match.group(1)
-        else:
-            # 尝试直接解析 - 使用更智能的括号匹配
-            json_text = self._extract_json_braces(raw_output)
+        json_text = json_match.group(1) if json_match else self._extract_json_braces(raw_output)
 
         try:
             data = json.loads(json_text)

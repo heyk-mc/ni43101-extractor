@@ -49,10 +49,10 @@ def safe_path(user_path: str, base_dir: str | Path) -> Path:
     # 检查是否在 base 目录下
     try:
         target.relative_to(base)
-    except ValueError:
+    except ValueError as err:
         raise PathSecurityError(
             f"路径超出允许范围：{user_path} " f"(基准目录：{base}, 解析路径：{target})"
-        )
+        ) from err
 
     return target
 

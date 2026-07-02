@@ -13,7 +13,6 @@ import click
 from core.config import settings
 from core.evolution_log import get_evolution_log
 from core.logging_config import logger
-from core.pdf_parser import extract_resources_from_pdf
 from core.revise_loop import RevisionOutput, run_extraction
 from eval.metrics import evaluate_single, generate_report, load_ground_truth
 
@@ -177,7 +176,10 @@ def evaluate(truth: str, output: str, tolerance: float):
     report = generate_report(eval_results)
 
     # 保存报告
-    save_report(report, output)
+    output_path = Path(output)
+    output_path.parent.mkdir(parents=True, exist_ok=True)
+    with open(output_path, "w", encoding="utf-8") as f:
+        f.write(report)
     click.echo(f"\n评测报告已保存：{output}")
 
     # 输出摘要
@@ -214,8 +216,6 @@ def parse(pdf_path: str):
 
     用于调试 PDF 解析功能。
     """
-    # 直接使用传入的路径，提取文件名
-    from core.pdf_parser import extract_tables_pdfplumber
     import pdfplumber
 
     pdf_path_obj = Path(pdf_path).resolve()

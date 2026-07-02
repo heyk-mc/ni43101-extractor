@@ -26,7 +26,7 @@ class Settings(BaseSettings):
     # -----------------------------
     # DeepSeek API 配置 (Extractor Agent)
     # -----------------------------
-    deepseek_api_key: str
+    deepseek_api_key: str | None = None
     deepseek_model: str = "deepseek-v4-pro"
 
     # -----------------------------

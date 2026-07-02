@@ -178,6 +178,6 @@ class TestRunExtraction:
 
             from core.revise_loop import run_extraction
 
-            result = await run_extraction("test.pdf")
+            await run_extraction("test.pdf")
 
             mock_loop.run.assert_called_once()
