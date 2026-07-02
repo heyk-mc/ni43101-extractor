@@ -334,6 +334,7 @@ class ExtractorAgent:
         pdf_text = self._tables_to_text(tables)
         # 同步调用，因为 extract 是 async 但这里不需要 await
         import asyncio
+
         try:
             loop = asyncio.get_event_loop()
         except RuntimeError:
