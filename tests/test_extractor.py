@@ -41,20 +41,23 @@ class TestExtractorAgent:
     @pytest.fixture
     def mock_config(self):
         config = Mock()
-        config.anthropic_api_key = "test-key"
-        config.anthropic_model = "claude-test"
+        config.deepseek_api_key = "test-key"
+        config.deepseek_model = "deepseek-test"
         return config
 
     @pytest.fixture
     def extractor(self, mock_config):
-        with patch("agents.extractor_agent.Anthropic"):
+        with patch("agents.extractor_agent.OpenAI"):
             return ExtractorAgent(config=mock_config)
 
     def test_init(self, mock_config):
-        with patch("agents.extractor_agent.Anthropic") as mock_anthropic:
+        with patch("agents.extractor_agent.OpenAI") as mock_openai:
             agent = ExtractorAgent(config=mock_config)
-            assert agent.model == mock_config.anthropic_model
-            mock_anthropic.assert_called_once_with(api_key=mock_config.anthropic_api_key)
+            assert agent.model == mock_config.deepseek_model
+            mock_openai.assert_called_once_with(
+                api_key=mock_config.deepseek_api_key,
+                base_url="https://api.deepseek.com"
+            )
 
     def test_build_prompt(self, extractor):
         pdf_text = "Test PDF content with Indicated Resources 100 Mt"
@@ -102,9 +105,9 @@ class TestExtractorAgent:
 
     @pytest.mark.asyncio
     async def test_extract_success(self, extractor):
-        with patch.object(extractor.client.messages, "create") as mock_create:
+        with patch.object(extractor.client.chat.completions, "create") as mock_create:
             mock_create.return_value = Mock(
-                content=[Mock(text='{"indicated": {"ore_mt": 100.0}, "confidence": 0.9}')]
+                choices=[Mock(message=Mock(content='{"indicated": {"ore_mt": 100.0}, "confidence": 0.9}'))]
             )
 
             result = await extractor.extract("Test PDF content")
@@ -116,9 +119,9 @@ class TestExtractorAgent:
     async def test_extract_with_history(self, extractor):
         history = [{"score": 5, "feedback": "Missing grade value"}]
 
-        with patch.object(extractor.client.messages, "create") as mock_create:
+        with patch.object(extractor.client.chat.completions, "create") as mock_create:
             mock_create.return_value = Mock(
-                content=[Mock(text='{"indicated": {"ore_mt": 100.0}, "confidence": 0.8}')]
+                choices=[Mock(message=Mock(content='{"indicated": {"ore_mt": 100.0}, "confidence": 0.8}'))]
             )
 
             result = await extractor.extract("Test content", history=history)
@@ -130,7 +133,7 @@ class TestExtractorAgent:
 
     @pytest.mark.asyncio
     async def test_extract_api_error(self, extractor):
-        with patch.object(extractor.client.messages, "create") as mock_create:
+        with patch.object(extractor.client.chat.completions, "create") as mock_create:
             mock_create.side_effect = Exception("API Error")
 
             result = await extractor.extract("Test content")
@@ -144,7 +147,7 @@ class TestTablesToText:
 
     @pytest.fixture
     def extractor(self):
-        with patch("agents.extractor_agent.Anthropic"):
+        with patch("agents.extractor_agent.OpenAI"):
             return ExtractorAgent()
 
     def test_tables_to_text(self, extractor):

@@ -1,13 +1,13 @@
 """
 Extractor Agent - 强模型资源量提取 Agent
 
-使用 Claude (GPT-4o/DeepSeek) 从 PDF 文本中提取结构化的资源量数据。
+使用 DeepSeek 从 PDF 文本中提取结构化的资源量数据。
 支持 few-shot 示例注入，提升提取准确率。
 """
 
 import json
 
-from anthropic import Anthropic
+from openai import OpenAI
 from pydantic import BaseModel, Field
 
 from core.config import Settings, get_settings
@@ -51,7 +51,7 @@ class ExtractorAgent:
     """
     资源量提取 Agent
 
-    使用强模型（Claude）从 NI 43-101 PDF 中提取结构化数据。
+    使用 DeepSeek 模型从 NI 43-101 PDF 中提取结构化数据。
     """
 
     def __init__(self, config: Settings | None = None):
@@ -62,8 +62,12 @@ class ExtractorAgent:
             config: 配置对象，默认使用全局配置
         """
         self.config = config or get_settings()
-        self.client = Anthropic(api_key=self.config.anthropic_api_key)
-        self.model = self.config.anthropic_model
+        # DeepSeek API 使用 OpenAI 兼容接口
+        self.client = OpenAI(
+            api_key=self.config.deepseek_api_key,
+            base_url="https://api.deepseek.com"
+        )
+        self.model = self.config.deepseek_model
 
         logger.info(f"ExtractorAgent 已初始化，模型：{self.model}")
 
@@ -200,12 +204,13 @@ class ExtractorAgent:
         logger.info(f"调用 {self.model} 进行提取...")
 
         try:
-            # 调用 Claude API
-            response = self.client.messages.create(
-                model=self.model, max_tokens=2000, messages=[{"role": "user", "content": prompt}]
+            # 调用 DeepSeek API (OpenAI 兼容接口)
+            response = self.client.chat.completions.create(
+                model=self.model,
+                messages=[{"role": "user", "content": prompt}]
             )
 
-            raw_output = response.content[0].text
+            raw_output = response.choices[0].message.content
             logger.info(f"提取完成，原始输出长度：{len(raw_output)}")
 
             # 解析 JSON 输出

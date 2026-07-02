@@ -24,16 +24,16 @@ class Settings(BaseSettings):
     )
 
     # -----------------------------
-    # Anthropic API 配置
+    # DeepSeek API 配置 (Extractor Agent)
     # -----------------------------
-    anthropic_api_key: str
-    anthropic_model: str = "claude-sonnet-4-20250514"
+    deepseek_api_key: str
+    deepseek_model: str = "deepseek-v4-pro"
 
     # -----------------------------
-    # 可选：DashScope API 配置 (Qwen)
+    # DashScope API 配置 (CriticMaster Agent - Qwen)
     # -----------------------------
     dashscope_api_key: str | None = None
-    qwen_model: str = "qwen-max"
+    qwen_model: str = "qwen3.5-plus"
 
     # -----------------------------
     # 日志配置
