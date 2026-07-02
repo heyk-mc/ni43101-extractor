@@ -208,7 +208,7 @@ class ExtractorAgent:
                 model=self.model, messages=[{"role": "user", "content": prompt}]
             )
 
-            raw_output = response.choices[0].message.content
+            raw_output = response.choices[0].message.content or ""
             logger.info(f"提取完成，原始输出长度：{len(raw_output)}")
 
             # 解析 JSON 输出
@@ -332,7 +332,14 @@ class ExtractorAgent:
         """
         # 将表格数据转换为文本
         pdf_text = self._tables_to_text(tables)
-        return self.extract(pdf_text, few_shot_examples)
+        # 同步调用，因为 extract 是 async 但这里不需要 await
+        import asyncio
+        try:
+            loop = asyncio.get_event_loop()
+        except RuntimeError:
+            loop = asyncio.new_event_loop()
+            asyncio.set_event_loop(loop)
+        return loop.run_until_complete(self.extract(pdf_text, few_shot_examples))
 
     def _tables_to_text(self, tables: list[ResourceTable]) -> str:
         """

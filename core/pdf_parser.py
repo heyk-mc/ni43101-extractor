@@ -62,7 +62,7 @@ class ResourceTable:
         }
 
 
-def extract_tables_pdfplumber(pdf_path: Path) -> list[tuple[int, list[list[str]]]]:
+def extract_tables_pdfplumber(pdf_path: Path) -> list[tuple[int, list[list[str | None]]]]:
     """
     使用 pdfplumber 提取 PDF 中的表格
 
@@ -72,7 +72,7 @@ def extract_tables_pdfplumber(pdf_path: Path) -> list[tuple[int, list[list[str]]
     Returns:
         列表，每项为 (页码，表格数据) 元组
     """
-    tables_with_pages = []
+    tables_with_pages: list[tuple[int, list[list[str | None]]]] = []
 
     try:
         with pdfplumber.open(str(pdf_path)) as pdf:
@@ -89,7 +89,7 @@ def extract_tables_pdfplumber(pdf_path: Path) -> list[tuple[int, list[list[str]]
     return tables_with_pages
 
 
-def extract_tables_pypdf(pdf_path: Path) -> list[tuple[int, list[list[str]]]]:
+def extract_tables_pypdf(pdf_path: Path) -> list[tuple[int, list[list[str | None]]]]:
     """
     使用 pypdf 提取 PDF 中的表格（兜底方案）
 
@@ -99,7 +99,7 @@ def extract_tables_pypdf(pdf_path: Path) -> list[tuple[int, list[list[str]]]]:
     Returns:
         列表，每项为 (页码，表格数据) 元组
     """
-    tables_with_pages = []
+    tables_with_pages: list[tuple[int, list[list[str | None]]]] = []
 
     try:
         reader = PdfReader(str(pdf_path))
@@ -111,7 +111,7 @@ def extract_tables_pypdf(pdf_path: Path) -> list[tuple[int, list[list[str]]]]:
 
             # 简单的表格检测：查找包含制表符或多空格的行
             lines = text.split("\n")
-            table_lines = []
+            table_lines: list[list[str | None]] = []
             in_table = False
 
             for line in lines:
@@ -139,7 +139,7 @@ def extract_tables_pypdf(pdf_path: Path) -> list[tuple[int, list[list[str]]]]:
     return tables_with_pages
 
 
-def is_resource_table(table: list[list[str]]) -> bool:
+def is_resource_table(table: list[list[str | None]]) -> bool:
     """
     判断表格是否为资源量表格
 
@@ -173,10 +173,10 @@ def is_resource_table(table: list[list[str]]) -> bool:
     ]
 
     # 检查表头（通常是第一行）
-    header = " ".join(table[0]).lower() if table else ""
+    header = " ".join(str(cell) for cell in table[0] if cell).lower() if table else ""
 
     # 检查前几行
-    first_rows = " ".join(" ".join(row) for row in table[:3]).lower()
+    first_rows = " ".join(" ".join(str(cell) for cell in row if cell) for row in table[:3]).lower()
 
     # 统计关键词匹配
     match_count = sum(1 for kw in keywords if kw in header or kw in first_rows)
@@ -226,7 +226,7 @@ def parse_number(text: str) -> float | None:
     return None
 
 
-def parse_table(table: list[list[str]], page: int) -> list[ResourceTable]:
+def parse_table(table: list[list[str | None]], page: int) -> list[ResourceTable]:
     """
     解析资源量表格
 
@@ -272,23 +272,26 @@ def parse_table(table: list[list[str]], page: int) -> list[ResourceTable]:
             resource_type=resource_type,
             commodity=commodity,
             source_page=page,
-            raw_text=" | ".join(row),
+            raw_text=" | ".join(str(cell) for cell in row if cell),
         )
 
         # 提取数值
         if "ore_mt" in col_mapping and col_mapping["ore_mt"] < len(row):
-            resource_table.ore_mt = parse_number(row[col_mapping["ore_mt"]])
+            ore_text = row[col_mapping["ore_mt"]]
+            resource_table.ore_mt = parse_number(ore_text) if ore_text else None
 
         if "grade" in col_mapping and col_mapping["grade"] < len(row):
             grade_text = row[col_mapping["grade"]]
-            resource_table.grade_value = parse_number(grade_text)
-            resource_table.grade_unit = extract_grade_unit(grade_text)
+            resource_table.grade_value = parse_number(grade_text) if grade_text else None
+            resource_table.grade_unit = extract_grade_unit(grade_text) if grade_text else None
 
         if "metal_oz" in col_mapping and col_mapping["metal_oz"] < len(row):
-            resource_table.metal_oz = parse_number(row[col_mapping["metal_oz"]])
+            metal_oz_text = row[col_mapping["metal_oz"]]
+            resource_table.metal_oz = parse_number(metal_oz_text) if metal_oz_text else None
 
         if "metal_t" in col_mapping and col_mapping["metal_t"] < len(row):
-            resource_table.metal_t = parse_number(row[col_mapping["metal_t"]])
+            metal_t_text = row[col_mapping["metal_t"]]
+            resource_table.metal_t = parse_number(metal_t_text) if metal_t_text else None
 
         # 计算置信度
         resource_table.confidence = calculate_confidence(resource_table)
@@ -299,7 +302,7 @@ def parse_table(table: list[list[str]], page: int) -> list[ResourceTable]:
     return results
 
 
-def detect_resource_type(row: list[str]) -> str | None:
+def detect_resource_type(row: list[str | None]) -> str | None:
     """
     从行数据中检测资源类型
 
@@ -325,7 +328,7 @@ def detect_resource_type(row: list[str]) -> str | None:
     return None
 
 
-def detect_commodity(table: list[list[str]]) -> str | None:
+def detect_commodity(table: list[list[str | None]]) -> str | None:
     """
     检测矿产品种
 
@@ -335,7 +338,7 @@ def detect_commodity(table: list[list[str]]) -> str | None:
     Returns:
         矿产品种 (Au/Cu 等)
     """
-    table_text = " ".join(" ".join(row) for row in table).lower()
+    table_text = " ".join(" ".join(str(cell) for cell in row if cell) for row in table).lower()
 
     if any(kw in table_text for kw in ["gold", "au ", "au,", "(au)"]):
         return "Au"

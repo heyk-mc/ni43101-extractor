@@ -315,21 +315,21 @@ notes: {extraction_result.notes or '无'}
         else:
             # 检查字段
             indicated = extraction_result.indicated
-            if indicated.get("ore_mt") is None:
+            if indicated and indicated.get("ore_mt") is None:
                 score -= 1
                 issues.append("Indicated 矿石量缺失")
-            if indicated.get("grade_value") is None:
+            if indicated and indicated.get("grade_value") is None:
                 score -= 1
                 issues.append("Indicated 品位缺失")
-            if indicated.get("grade_unit") is None:
+            if indicated and indicated.get("grade_unit") is None:
                 score -= 1
                 issues.append("Indicated 单位缺失")
 
             inferred = extraction_result.inferred
-            if inferred.get("ore_mt") is None:
+            if inferred and inferred.get("ore_mt") is None:
                 score -= 1
                 issues.append("Inferred 矿石量缺失")
-            if inferred.get("grade_value") is None:
+            if inferred and inferred.get("grade_value") is None:
                 score -= 1
                 issues.append("Inferred 品位缺失")
 

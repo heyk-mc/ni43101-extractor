@@ -138,7 +138,7 @@ class ReviseLoop:
         pdf_text = self._tables_to_text(tables)
 
         # 步骤 3: 运行修订循环
-        history = []
+        history: list[dict] = []
         current_few_shot = few_shot_examples
 
         for round_num in range(1, self.max_rounds + 1):

@@ -45,7 +45,8 @@ def load_ground_truth(truth_path: str) -> dict:
         ground truth 字典
     """
     with open(truth_path, encoding="utf-8") as f:
-        return json.load(f)
+        data: dict = json.load(f)
+        return data
 
 
 def calculate_accuracy(
