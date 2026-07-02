@@ -28,6 +28,44 @@
 
 ---
 
+## Docker 快速开始
+
+### 1. 克隆项目并进入目录
+
+```bash
+git clone https://github.com/heyk-mc/ni43101-extractor.git
+cd ni43101-extractor
+```
+
+### 2. 配置环境变量
+
+```bash
+cp .env.example .env
+# 编辑 .env 填入 API Keys
+```
+
+### 3. 准备 PDF 文件
+
+```bash
+mkdir -p data/pdfs
+cp your-report.pdf data/pdfs/
+```
+
+### 4. 构建并运行
+
+```bash
+# 构建镜像
+docker compose build
+
+# 提取单个 PDF
+docker compose run extractor python run.py extract data/pdfs/your-report.pdf -v
+
+# 批量评测
+docker compose --profile batch run batch-extractor
+```
+
+---
+
 ## 快速开始
 
 ### 1. 安装依赖
