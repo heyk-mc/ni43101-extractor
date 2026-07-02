@@ -250,10 +250,8 @@ class ExtractorAgent:
         if json_match:
             json_text = json_match.group(1)
         else:
-            # 尝试直接解析
-            json_match = re.search(r"\{.+?\}", raw_output, re.DOTALL)
-            if json_match:
-                json_text = json_match.group(0)
+            # 尝试直接解析 - 使用更智能的括号匹配
+            json_text = self._extract_json_braces(raw_output)
 
         try:
             data = json.loads(json_text)
@@ -280,6 +278,50 @@ class ExtractorAgent:
                 raw_extraction=raw_output,
                 notes=notes
             )
+
+    def _extract_json_braces(self, text: str) -> str:
+        """
+        从文本中提取最外层的 JSON 对象（处理嵌套括号）
+
+        Args:
+            text: 包含 JSON 的文本
+
+        Returns:
+            JSON 字符串
+        """
+        # 找到第一个 {
+        start = text.find('{')
+        if start == -1:
+            return text
+
+        # 括号计数
+        count = 0
+        in_string = False
+        escape = False
+
+        for i, char in enumerate(text[start:], start):
+            if escape:
+                escape = False
+                continue
+
+            if char == '\\\\':
+                escape = True
+                continue
+
+            if char == '"' and not escape:
+                in_string = not in_string
+                continue
+
+            if not in_string:
+                if char == '{':
+                    count += 1
+                elif char == '}':
+                    count -= 1
+                    if count == 0:
+                        return text[start:i + 1]
+
+        # 如果没有找到匹配的括号，返回整个文本
+        return text
 
     def extract_from_resource_tables(
         self,
