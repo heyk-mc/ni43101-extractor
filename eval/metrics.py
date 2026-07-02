@@ -11,7 +11,7 @@ from dataclasses import dataclass
 
 from core.config import get_settings
 from core.logging_config import logger
-from core.revised_loop import RevisionOutput
+from core.revise_loop import RevisionOutput
 from agents.extractor_agent import ExtractionResult
 
 
